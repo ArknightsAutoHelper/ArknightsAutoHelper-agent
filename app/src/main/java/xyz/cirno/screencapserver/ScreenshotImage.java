@@ -1,32 +1,44 @@
 package xyz.cirno.screencapserver;
 
-import android.graphics.Bitmap;
+import java.nio.ByteBuffer;
+import java.time.Duration;
 
 public class ScreenshotImage {
+
+
     public enum ColorSpace {
         UNKNOWN,
         SRGB,
-        DISPLAY_P3,
-    }
-    private final Bitmap bitmap;
-    private final ColorSpace colorSpace;
-    private final int rotation;
+        DISPLAY_P3;
 
-    public ScreenshotImage(Bitmap bitmap, ColorSpace colorSpace, int rotation) {
-        this.bitmap = bitmap;
+        public static ScreenshotImage.ColorSpace fromHwcMode(int mode) {
+            switch (mode) {
+                case 7:
+                    return SRGB;
+                case 9:
+                    return DISPLAY_P3;
+                default:
+                    return UNKNOWN;
+            }
+        }
+    }
+    public final ByteBuffer data;
+    public final int width;
+    public final int height;
+    public final int rowStride;
+    public final int pixelStride;
+    public final ColorSpace colorSpace;
+    public final int rotation;
+    public final long timestamp;
+
+    public ScreenshotImage(ByteBuffer data, int width, int height, int rowStride, int pixelStride, ColorSpace colorSpace, int rotation, long timestamp) {
+        this.data = data;
+        this.width = width;
+        this.height = height;
+        this.rowStride = rowStride;
+        this.pixelStride = pixelStride;
         this.colorSpace = colorSpace;
         this.rotation = rotation;
-    }
-
-    public Bitmap getBitmap() {
-        return bitmap;
-    }
-
-    public ColorSpace getColorSpace() {
-        return colorSpace;
-    }
-
-    public int getRotation() {
-        return rotation;
+        this.timestamp = timestamp;
     }
 }
