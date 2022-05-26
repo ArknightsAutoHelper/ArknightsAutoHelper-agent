@@ -1,4 +1,4 @@
-package xyz.cirno.screencapserver;
+package xyz.cirno.scrsrv;
 
 import android.hardware.display.IDisplayManager;
 import android.net.LocalServerSocket;
@@ -11,7 +11,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.Channels;
 
-public class Entry {
+public class Main {
     public static void main(String[] args) {
         Looper.prepareMainLooper();
         try (LocalServerSocket server = new LocalServerSocket("scrsrv")) {
@@ -36,7 +36,7 @@ public class Entry {
                 if (command == 0x44495350 /* 'DISP' */) {
                     if (payloadLength != 8) {
                         dos.writeInt(0x4641494c /* 'FAIL' */);
-                        throw new RuntimeException("invalid payload length");
+                        throw new RuntimeException("command DISP: invalid payload length");
                     }
                     int displayId = dis.readInt();
                     boolean secure = dis.readInt() != 0;
@@ -47,17 +47,17 @@ public class Entry {
                     long t = System.nanoTime();
                     if (payloadLength != 0) {
                         dos.writeInt(0x4641494c /* 'FAIL' */);
-                        throw new RuntimeException("invalid payload length");
+                        throw new RuntimeException("command SYNC: invalid payload length");
                     }
                     dos.writeInt(0x4f4b4159 /* 'OKAY' */);
                     dos.writeInt(8); // response length
                     dos.writeLong(System.nanoTime());
                     System.out.println("received SYNC");
                 } else if (command == 0x53434150 /* 'SCAP' */) {
-                    System.out.println("received SCAP");
+//                    System.out.println("received SCAP");
                     if (payloadLength != 0) {
                         dos.writeInt(0x4641494c /* 'FAIL' */);
-                        throw new RuntimeException("invalid payload length");
+                        throw new RuntimeException("command SCAP: invalid payload length");
                     }
                     if (session == null) {
                         dos.writeInt(0x4f4b4159 /* 'OKAY' */);

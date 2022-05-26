@@ -1,8 +1,6 @@
-package xyz.cirno.screencapserver;
+package xyz.cirno.scrsrv;
 
-import android.graphics.Bitmap;
 import android.hardware.display.IDisplayManager;
-import android.os.IBinder;
 import android.os.ServiceManager;
 
 import java.io.Closeable;

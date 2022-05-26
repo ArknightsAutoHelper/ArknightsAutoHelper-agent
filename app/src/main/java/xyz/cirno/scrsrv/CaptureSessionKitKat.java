@@ -1,13 +1,9 @@
-package xyz.cirno.screencapserver;
+package xyz.cirno.scrsrv;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.graphics.Bitmap;
 import android.os.Build;
-import android.os.IBinder;
 import android.view.SurfaceControlKitKat;
-
-import java.lang.reflect.Method;
 
 @SuppressLint({"PrivateApi", "BlockedPrivateApi"})
 @TargetApi(Build.VERSION_CODES.KITKAT)

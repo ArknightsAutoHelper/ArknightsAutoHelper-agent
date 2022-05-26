@@ -1,7 +1,6 @@
-package xyz.cirno.screencapserver;
+package xyz.cirno.scrsrv;
 
 import java.nio.ByteBuffer;
-import java.time.Duration;
 
 public class ScreenshotImage {
 

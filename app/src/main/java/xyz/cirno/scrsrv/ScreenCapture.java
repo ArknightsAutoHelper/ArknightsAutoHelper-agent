@@ -1,4 +1,4 @@
-package xyz.cirno.screencapserver;
+package xyz.cirno.scrsrv;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
@@ -7,7 +7,6 @@ import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.IBinder;
-import android.view.SurfaceControl;
 
 
 import java.lang.reflect.Constructor;

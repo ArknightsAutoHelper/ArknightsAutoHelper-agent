@@ -1,4 +1,4 @@
-package xyz.cirno.screencapserver;
+package xyz.cirno.scrsrv;
 
 public class AutoResetEvent
 {

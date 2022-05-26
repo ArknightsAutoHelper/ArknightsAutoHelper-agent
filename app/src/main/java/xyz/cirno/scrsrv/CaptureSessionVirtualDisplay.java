@@ -1,4 +1,4 @@
-package xyz.cirno.screencapserver;
+package xyz.cirno.scrsrv;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
