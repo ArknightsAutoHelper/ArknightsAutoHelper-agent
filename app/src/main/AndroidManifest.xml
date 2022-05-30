@@ -7,5 +7,8 @@
         android:allowBackup="false"
         android:label="@string/app_name"
         tools:targetApi="31" /-->
-
+    <application
+        android:multiArch="true"
+        android:extractNativeLibs="false"
+    />
 </manifest>

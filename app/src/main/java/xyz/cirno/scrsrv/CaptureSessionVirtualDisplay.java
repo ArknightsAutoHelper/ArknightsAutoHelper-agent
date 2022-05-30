@@ -79,21 +79,21 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
         imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
             @Override
             public void onImageAvailable(ImageReader reader) {
-                CaptureSessionVirtualDisplay.this.frameAvailableEvent.set();
+                Image newimg = imageReader.acquireNextImage();
+                long t = System.nanoTime();
+                if (newimg == null) {
+                    return;
+                }
                 synchronized (lastImageLock) {
-                    Image newimg = imageReader.acquireNextImage();
-                    if (newimg == null) {
-                        return;
-                    }
-                    lastImageTime = System.nanoTime();
+                    lastImageTime = t;
                     if (lastImage != null) {
                         lastImage.close();
                     }
                     lastImage = newimg;
                 }
+                frameAvailableEvent.set();
             }
         }, handler);
-//        lastImage = null;
         SurfaceControlAllVersion.openTransaction();
         try {
             SurfaceControlAllVersion.setDisplaySurface(virtualDisplayToken, imageReader.getSurface());
@@ -118,16 +118,14 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
         int height = img.getHeight();
         int rowStride = plane.getRowStride();
         int pixelStride = plane.getPixelStride();
-        ByteBuffer buf = plane.getBuffer();
-        buf.mark();
+        ByteBuffer buf = plane.getBuffer().duplicate();
         int validSize = plane.getRowStride() * (img.getHeight() - 1) + plane.getPixelStride() * img.getWidth();
         buf.limit(validSize);
         // the buffer may be hardware-backed, copy to CPU
         ByteBuffer swbuf = ByteBuffer.allocate(validSize);
         swbuf.put(buf);
         swbuf.flip();
-        buf.reset();
-        return new ScreenshotImage(swbuf, width, height, rowStride, pixelStride, colorSpace, 0, lastImageTime);
+        return new ScreenshotImage(swbuf, width, height, rowStride, pixelStride, colorSpace, 0, img.getTimestamp(), lastImageTime);
     }
 
     @Override

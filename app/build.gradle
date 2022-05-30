@@ -24,9 +24,16 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    packagingOptions.jniLibs.useLegacyPackaging false
 }
 
+
 dependencies {
+    implementation project(':lz4-java')
+    // implementation('org.lz4:lz4-java:1.8.0').exclude("net/jpountz")
     compileOnly project(':hidden-api')
     implementation("dev.rikka.tools.refine:runtime:3.1.1")
 }
+
+
