@@ -1,7 +1,7 @@
-package xyz.cirno.scrsrv;
+package xyz.cirno.aah.agent;
 
-import static xyz.cirno.scrsrv.Util.readFully;
-import static xyz.cirno.scrsrv.Util.writeFully;
+import static xyz.cirno.aah.agent.Util.readFully;
+import static xyz.cirno.aah.agent.Util.writeFully;
 
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
@@ -14,7 +14,6 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -29,21 +28,23 @@ public class ConnectionManager {
     private static final HashSet<Closeable> pendingSockets = new HashSet<>();
 
 
-    private interface IOStreams {
+    private static String describeLocalSocketAddress(LocalSocketAddress address) {
+        return String.format("AF_UNIX abstract: %s", address.getName());
+    }
+
+    private interface AbstractSocket extends Closeable {
         InputStream getInputStream() throws IOException;
-
         OutputStream getOutputStream() throws IOException;
-    }
-
-    private interface Acceptable extends Closeable {
-        IOStreams accept() throws IOException;
-    }
-
-    private interface Connectable extends IOStreams, Closeable {
         void connect(Object endpoint) throws IOException;
+        String describeEndpoint(Object endpoint);
     }
 
-    private static class SocketWrapper implements Connectable {
+    private interface AbstractServerSocket extends Closeable {
+        AbstractSocket accept() throws IOException;
+        String describeLocalEndpoint();
+    }
+
+    private static class SocketWrapper implements AbstractSocket {
         private final Socket _socket;
 
         public SocketWrapper(Socket socket) {
@@ -62,7 +63,13 @@ public class ConnectionManager {
 
         @Override
         public void connect(Object endpoint) throws IOException {
+            _socket.setTcpNoDelay(true);
             _socket.connect((SocketAddress) endpoint);
+        }
+
+        @Override
+        public String describeEndpoint(Object endpoint) {
+            return endpoint.toString();
         }
 
         @Override
@@ -71,7 +78,7 @@ public class ConnectionManager {
         }
     }
 
-    private static class ServerSocketWrapper implements Acceptable {
+    private static class ServerSocketWrapper implements AbstractServerSocket {
         private final ServerSocket _serverSocket;
 
         public ServerSocketWrapper(ServerSocket serverSocket) {
@@ -79,17 +86,24 @@ public class ConnectionManager {
         }
 
         @Override
-        public IOStreams accept() throws IOException {
-            return new SocketWrapper(_serverSocket.accept());
+        public AbstractSocket accept() throws IOException {
+            Socket socket = _serverSocket.accept();
+            socket.setTcpNoDelay(true);
+            return new SocketWrapper(socket);
         }
 
         @Override
         public void close() throws IOException {
             _serverSocket.close();
         }
+
+        @Override
+        public String describeLocalEndpoint() {
+            return _serverSocket.getLocalSocketAddress().toString();
+        }
     }
 
-    private static class LocalSocketWrapper implements Connectable {
+    private static class LocalSocketWrapper implements AbstractSocket {
         private final LocalSocket _localSocket;
 
         public LocalSocketWrapper(LocalSocket localSocket) {
@@ -99,6 +113,12 @@ public class ConnectionManager {
         @Override
         public void connect(Object endpoint) throws IOException {
             _localSocket.connect((LocalSocketAddress) endpoint);
+        }
+
+        @Override
+        public String describeEndpoint(Object endpoint) {
+            LocalSocketAddress lsa = (LocalSocketAddress) endpoint;
+            return describeLocalSocketAddress(lsa);
         }
 
         @Override
@@ -117,7 +137,7 @@ public class ConnectionManager {
         }
     }
 
-    private static class LocalServerSocketWrapper implements Acceptable {
+    private static class LocalServerSocketWrapper implements AbstractServerSocket {
         private final LocalServerSocket _localServerSocket;
 
         public LocalServerSocketWrapper(LocalServerSocket localServerSocket) {
@@ -125,7 +145,7 @@ public class ConnectionManager {
         }
 
         @Override
-        public IOStreams accept() throws IOException {
+        public AbstractSocket accept() throws IOException {
             return new LocalSocketWrapper(_localServerSocket.accept());
         }
 
@@ -133,14 +153,19 @@ public class ConnectionManager {
         public void close() throws IOException {
             _localServerSocket.close();
         }
+
+        @Override
+        public String describeLocalEndpoint() {
+            return describeLocalSocketAddress(_localServerSocket.getLocalSocketAddress());
+        }
     }
 
     private static class OutgoingConnectionHandler implements Runnable {
-        private final Connectable _connector;
+        private final AbstractSocket _connector;
         private final Object _endpoint;
         private final ByteBuffer _auth_payload;
 
-        public OutgoingConnectionHandler(Connectable connector, Object endpoint, ByteBuffer auth_payload) {
+        public OutgoingConnectionHandler(AbstractSocket connector, Object endpoint, ByteBuffer auth_payload) {
             _connector = connector;
             _endpoint = endpoint;
             _auth_payload = auth_payload;
@@ -150,8 +175,10 @@ public class ConnectionManager {
         public void run() {
             try {
                 addPendingSocket(_connector);
+                System.out.println("new outgoing sub-connection to " + _connector.describeEndpoint(_endpoint));
                 _connector.connect(_endpoint);
                 removePendingSocket(_connector);
+                System.out.println("connected to " + _connector.describeEndpoint(_endpoint));
                 ReadableByteChannel ic = Channels.newChannel(_connector.getInputStream());
                 WritableByteChannel oc = Channels.newChannel(_connector.getOutputStream());
                 writeFully(oc, _auth_payload.duplicate());
@@ -164,10 +191,10 @@ public class ConnectionManager {
     }
 
     private static class IncomingConnectionHandler implements Runnable {
-        private final Acceptable _acceptor;
+        private final AbstractServerSocket _acceptor;
         private final ByteBuffer _auth_payload;
 
-        public IncomingConnectionHandler(Acceptable acceptor, ByteBuffer auth_payload) {
+        public IncomingConnectionHandler(AbstractServerSocket acceptor, ByteBuffer auth_payload) {
             _acceptor = acceptor;
             _auth_payload = auth_payload;
         }
@@ -176,12 +203,11 @@ public class ConnectionManager {
         public void run() {
             try {
                 addPendingSocket(_acceptor);
-                IOStreams connection = _acceptor.accept();
+                System.out.printf("waiting for incoming sub-connection on %s\n", _acceptor.describeLocalEndpoint());
+                AbstractSocket connection = _acceptor.accept();
                 removePendingSocket(_acceptor);
+                System.out.printf("accepted connection on %s\n", _acceptor.describeLocalEndpoint());
                 _acceptor.close();
-                if (connection instanceof SocketWrapper) {
-                    ((SocketWrapper) connection)._socket.setTcpNoDelay(true);
-                }
                 ReadableByteChannel ic = Channels.newChannel(connection.getInputStream());
                 WritableByteChannel oc = Channels.newChannel(connection.getOutputStream());
                 ByteBuffer peerPayload = ByteBuffer.allocate(_auth_payload.remaining());
@@ -207,18 +233,11 @@ public class ConnectionManager {
     }
 
     public static void runOutgoingConnection(SocketAddress endpoint, ByteBuffer auth_payload) {
-        Socket sock = new Socket();
-        try {
-            sock.setTcpNoDelay(true);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-        pool.execute(new OutgoingConnectionHandler(new SocketWrapper(sock), endpoint, auth_payload.duplicate()));
+        pool.execute(new OutgoingConnectionHandler(new SocketWrapper(new Socket()), endpoint, auth_payload.duplicate()));
     }
 
     public static void runOutgoingConnection(LocalSocketAddress endpoint, ByteBuffer auth_payload) {
-        LocalSocket sock = new LocalSocket();
-        pool.execute(new OutgoingConnectionHandler(new LocalSocketWrapper(sock), endpoint, auth_payload.duplicate()));
+        pool.execute(new OutgoingConnectionHandler(new LocalSocketWrapper(new LocalSocket()), endpoint, auth_payload.duplicate()));
     }
 
     protected static void addPendingSocket(Closeable socket) {

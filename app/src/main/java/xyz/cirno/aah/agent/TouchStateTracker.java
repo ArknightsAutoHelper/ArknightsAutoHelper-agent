@@ -1,9 +1,7 @@
-package xyz.cirno.scrsrv;
+package xyz.cirno.aah.agent;
 
 import android.annotation.SuppressLint;
-import android.os.SystemClock;
 import android.view.InputDevice;
-import android.view.InputEvent;
 import android.view.MotionEvent;
 
 import java.lang.reflect.Method;
@@ -11,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @SuppressLint("PrivateApi, BlockedPrivateApi")
 public class TouchStateTracker {

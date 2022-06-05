@@ -1,7 +1,7 @@
-package xyz.cirno.scrsrv;
+package xyz.cirno.aah.agent;
 
-import static xyz.cirno.scrsrv.Util.readFully;
-import static xyz.cirno.scrsrv.Util.writeFully;
+import static xyz.cirno.aah.agent.Util.readFully;
+import static xyz.cirno.aah.agent.Util.writeFully;
 
 import android.annotation.SuppressLint;
 import android.content.ClipData;
@@ -53,7 +53,6 @@ public class ControlConnection {
     private static final Method KeyEvent_setDisplayId;
 
 
-
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
     private static final int COMMAND_OPEN = 0x4f50454e; // 'OPEN'
@@ -68,23 +67,21 @@ public class ControlConnection {
     private static final int COMMAND_SEND_TEXT = 0x54455854; // 'TEXT'
 
 
-
     private static final int TOKEN_OK = 0x4f4b4159; // 'OKAY
     private static final int TOKEN_FAIL = 0x4641494c; // 'FAIL'
 
 
-
     private static final Set<Integer> bootstrapCommands = new HashSet<>(Collections.singletonList(COMMAND_OPEN));
     private static final Set<Integer> subConnectionCommands = new HashSet<>(Arrays.asList(
-        COMMAND_SET_DISPLAY,
-        COMMAND_SYNC,
-        COMMAND_SCREEN_CAPTURE,
-        COMMAND_TOUCH_EVENT,
-        COMMAND_KEY_EVENT,
-        COMMAND_KEY_PRESS,
-        COMMAND_SEND_TEXT,
-        COMMAND_BEGIN_BATCH,
-        COMMAND_END_BATCH
+            COMMAND_SET_DISPLAY,
+            COMMAND_SYNC,
+            COMMAND_SCREEN_CAPTURE,
+            COMMAND_TOUCH_EVENT,
+            COMMAND_KEY_EVENT,
+            COMMAND_KEY_PRESS,
+            COMMAND_SEND_TEXT,
+            COMMAND_BEGIN_BATCH,
+            COMMAND_END_BATCH
     ));
     private static final Set<Integer> fullCommands = new HashSet<>();
 
@@ -93,40 +90,27 @@ public class ControlConnection {
         fullCommands.addAll(subConnectionCommands);
     }
 
-    private final ReadableByteChannel inChannel;
-    private final WritableByteChannel outChannel;
-    private Set<Integer> acceptedCommands;
-
-    private int displayId = -1;
-    private CaptureSession session = null;
-    private LZ4Compressor compressor = null;
-
-    private TouchStateTracker touchStateTracker = null;
-    private InputManagerHidden inputManager = null;
-    private ClipboardWrapper clipboard = null;
-
-    private boolean inBatchEvent = false;
-    private long lastBatchEventTime = 0;
-    private final List<BatchEventRecord> batchEvents = new ArrayList<>();
-
-    private static class BatchEventRecord {
-        public final InputEvent event;
-        public final int mode;
-
-        public BatchEventRecord(InputEvent event, int mode) {
-            this.event = event;
-            this.mode = mode;
-        }
-    }
-
-
     static {
         Method meth = null;
         try {
             meth = KeyEvent.class.getMethod("setDisplayId", int.class);
-        } catch (NoSuchMethodException ignored) {}
+        } catch (NoSuchMethodException ignored) {
+        }
         KeyEvent_setDisplayId = meth;
     }
+
+    private final ReadableByteChannel inChannel;
+    private final WritableByteChannel outChannel;
+    private final List<BatchEventRecord> batchEvents = new ArrayList<>();
+    private Set<Integer> acceptedCommands;
+    private int displayId = -1;
+    private CaptureSession session = null;
+    private LZ4Compressor compressor = null;
+    private TouchStateTracker touchStateTracker = null;
+    private InputManagerHidden inputManager = null;
+    private ClipboardWrapper clipboard = null;
+    private boolean inBatchEvent = false;
+    private long lastBatchEventTime = 0;
 
 
     private ControlConnection(ReadableByteChannel inChannel, WritableByteChannel outChannel, Set<Integer> acceptedCommands) {
@@ -285,8 +269,8 @@ public class ControlConnection {
                 ByteBuffer response = ByteBuffer.allocate(ip.length + 2);
                 response.put(ip);
                 response.putShort((short) (listenPort & 0xFFFF));
-                ConnectionManager.runIncomingConnection(ss, connectionPayload);
                 response.flip();
+                ConnectionManager.runIncomingConnection(ss, connectionPayload);
                 return response;
             } else {
                 throw new RuntimeException("command OPEN: invalid type");
@@ -582,9 +566,20 @@ public class ControlConnection {
                 if (oldClip != null) {
                     clipboard.setPrimaryClip(oldClip);
                 }
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         } else {
             throw new RuntimeException("command TEXT: text cannot be injected");
+        }
+    }
+
+    private static class BatchEventRecord {
+        public final InputEvent event;
+        public final int mode;
+
+        public BatchEventRecord(InputEvent event, int mode) {
+            this.event = event;
+            this.mode = mode;
         }
     }
 

@@ -1,8 +1,7 @@
-package xyz.cirno.scrsrv;
+package xyz.cirno.aah.agent;
 
 import android.app.IActivityManager;
 import android.content.ClipData;
-import android.content.Context;
 import android.content.IClipboard;
 import android.os.ServiceManager;
 

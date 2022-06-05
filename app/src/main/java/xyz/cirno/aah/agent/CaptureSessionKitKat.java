@@ -1,9 +1,8 @@
-package xyz.cirno.scrsrv;
+package xyz.cirno.aah.agent;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.os.Build;
-import android.view.SurfaceControlKitKat;
 
 @SuppressLint({"PrivateApi", "BlockedPrivateApi"})
 @TargetApi(Build.VERSION_CODES.KITKAT)
