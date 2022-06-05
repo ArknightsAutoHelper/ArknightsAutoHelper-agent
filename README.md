@@ -1,1 +1,1 @@
-See demo: https://github.com/dantmnf/ArknightsAutoHelper/blob/x/scrsrv/scrsrv_demo.py
+See demo: https://github.com/ArknightsAutoHelper/ArknightsAutoHelper/blob/master/automator/connector/agent.py
