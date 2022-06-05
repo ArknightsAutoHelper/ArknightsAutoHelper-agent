@@ -35,4 +35,8 @@ public class SurfaceControlAllVersion {
         throw new UnsupportedOperationException();
     }
 
+    public static boolean setActiveColorMode(IBinder displayToken, int colorMode) {
+        throw new UnsupportedOperationException();
+    }
+
 }

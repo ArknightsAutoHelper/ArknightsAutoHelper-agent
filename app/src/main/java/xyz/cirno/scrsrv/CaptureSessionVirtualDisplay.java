@@ -39,7 +39,7 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
     private final Handler handler;
 
     private Image lastImage;
-    private long lastImageTime = -1;
+    // private long lastImageTime = -1;
     private final Object lastImageLock = new Object();
 
     private final AutoResetEvent frameAvailableEvent;
@@ -71,10 +71,15 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
     private void createVirtualDisplay() {
         destroyVirtualDisplay();
         DisplayInfo sourceDisplayInfo = getDisplayManager().getDisplayInfo(sourceDisplayId);
+
         Rect rc = new Rect(0, 0, sourceDisplayInfo.logicalWidth, sourceDisplayInfo.logicalHeight);
         currentSize = new Size(sourceDisplayInfo.logicalWidth, sourceDisplayInfo.logicalHeight);
         sourceLayerStack = sourceDisplayInfo.layerStack;
         virtualDisplayToken = SurfaceControlAllVersion.createDisplay("ScreenCapServer", captureSecureLayers);
+        if (colorModeField != null) {
+            // virtual display is always composed in sRGB color space.
+            colorSpace = ScreenshotImage.ColorSpace.SRGB;
+        }
         imageReader = ImageReader.newInstance(rc.width(), rc.height(), PixelFormat.RGBA_8888, 2);
         imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
             @Override
@@ -85,7 +90,7 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
                     return;
                 }
                 synchronized (lastImageLock) {
-                    lastImageTime = t;
+                    // lastImageTime = t;
                     if (lastImage != null) {
                         lastImage.close();
                     }
@@ -125,7 +130,7 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
         ByteBuffer swbuf = ByteBuffer.allocate(validSize);
         swbuf.put(buf);
         swbuf.flip();
-        return new ScreenshotImage(swbuf, width, height, rowStride, pixelStride, colorSpace, 0, img.getTimestamp(), lastImageTime);
+        return new ScreenshotImage(swbuf, width, height, rowStride, pixelStride, colorSpace, 0, img.getTimestamp());
     }
 
     @Override
@@ -154,10 +159,12 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
             }
             // color mode changed
             if (colorModeField != null) {
-                try {
-                    int colorMode = colorModeField.getInt(info);
-                    colorSpace = ScreenshotImage.ColorSpace.fromHwcMode(colorMode);
-                } catch (IllegalAccessException ignored) {}
+                // FIXME: DisplayInfo.colorMode does not reflect Surfaceflinger composition space
+                /*
+                int colorMode = info.colorMode;
+                colorSpace = ScreenshotImage.ColorSpace.fromHwcMode(colorMode);
+                SurfaceControlAllVersion.setActiveColorMode(virtualDisplayToken, colorMode);
+                */
             }
             if (displayChanged) {
                 createVirtualDisplay();

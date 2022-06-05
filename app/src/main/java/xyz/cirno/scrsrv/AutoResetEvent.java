@@ -22,12 +22,13 @@ public class AutoResetEvent
 
     public void waitOne(long timeout) throws InterruptedException
     {
+        long nanotimeout = timeout * 1000000;
         synchronized (_monitor) {
-            long t = System.currentTimeMillis();
+            long t = System.nanoTime();
             while (!_isOpen) {
                 _monitor.wait(timeout);
                 // Check for timeout
-                if (System.currentTimeMillis() - t >= timeout)
+                if (System.nanoTime() - t >= nanotimeout)
                     break;
             }
             _isOpen = false;

@@ -29,9 +29,8 @@ public class ScreenshotImage {
     public final ColorSpace colorSpace;
     public final int rotation;
     public final long timestamp;
-    public final long acquiredTime;
 
-    public ScreenshotImage(ByteBuffer data, int width, int height, int rowStride, int pixelStride, ColorSpace colorSpace, int rotation, long timestamp, long acquiredTime) {
+    public ScreenshotImage(ByteBuffer data, int width, int height, int rowStride, int pixelStride, ColorSpace colorSpace, int rotation, long timestamp) {
         this.data = data;
         this.width = width;
         this.height = height;
@@ -40,6 +39,5 @@ public class ScreenshotImage {
         this.colorSpace = colorSpace;
         this.rotation = rotation;
         this.timestamp = timestamp;
-        this.acquiredTime = acquiredTime;
     }
 }
