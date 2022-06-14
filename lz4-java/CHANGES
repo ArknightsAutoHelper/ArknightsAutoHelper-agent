@@ -1,0 +1,6 @@
+This module is based on https://github.com/lz4/lz4-java project.
+
+In comply with the Apache License, Version 2.0, the changes made to the original code are:
+  - made the native library loading routine work with Android shell app_process
+  - reorganized source files to make it work with Android build system
+    + pre-generated all generated sources which are originally generated in ant build process

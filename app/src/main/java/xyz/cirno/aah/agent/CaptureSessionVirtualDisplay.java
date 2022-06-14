@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 @SuppressLint("PrivateApi, SoonBlockedPrivateApi")
-public class CaptureSessionVirtualDisplay extends CaptureSession {
+public class CaptureSessionVirtualDisplay extends CaptureSession implements IDisplayManagerCallback {
 
     private final int sourceDisplayId;
     private final boolean captureSecureLayers;
@@ -42,6 +42,8 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
     // private long lastImageTime = -1;
     private final Object lastImageLock = new Object();
 
+    private Throwable acquireImageError = null;
+
     private final AutoResetEvent frameAvailableEvent;
 
     public CaptureSessionVirtualDisplay(int sourceDisplayId, boolean captureSecureLayers) {
@@ -58,12 +60,7 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
         createVirtualDisplay();
-        getDisplayManager().registerCallback(new IDisplayManagerCallback.Stub() {
-            @Override
-            public void onDisplayEvent(int displayId, int event) {
-                CaptureSessionVirtualDisplay.this.onDisplayEvent(displayId, event);
-            }
-        });
+        DisplayManagerCallbackManager.getInstance().registerCallback(this);
     }
 
 
@@ -84,7 +81,18 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
         imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
             @Override
             public void onImageAvailable(ImageReader reader) {
-                Image newimg = imageReader.acquireNextImage();
+                Image newimg = null;
+                try {
+                    newimg = imageReader.acquireNextImage();
+                // } catch (UnsupportedOperationException e) {
+                //     // TODO: MuMu uses RGB_888 format
+                //     pixelFormat = PixelFormat.RGB_888;
+                //     createVirtualDisplay();
+                //     return;
+                } catch (Throwable e) {
+                    acquireImageError = e;
+                    destroyVirtualDisplay();
+                }
                 long t = System.nanoTime();
                 if (newimg == null) {
                     return;
@@ -135,6 +143,9 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
 
     @Override
     public ScreenshotImage screenshot() {
+        if (acquireImageError != null) {
+            throw new RuntimeException("cannot acquire screenshot from virtual display", acquireImageError);
+        }
         if (lastImage == null) {
             try {
                 frameAvailableEvent.waitOne();
@@ -191,6 +202,11 @@ public class CaptureSessionVirtualDisplay extends CaptureSession {
             imageReader = null;
         }
         handlerThread.quit();
+        DisplayManagerCallbackManager.getInstance().unregisterCallback(this);
     }
 
+    @Override
+    protected void finalize() {
+        close();
+    }
 }

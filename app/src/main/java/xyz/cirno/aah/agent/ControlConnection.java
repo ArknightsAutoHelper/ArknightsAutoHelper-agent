@@ -184,7 +184,7 @@ public class ControlConnection {
                         default:
                             throw new UnsupportedOperationException(String.format("Unsupported command %08x", command));
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     StringWriter sw = new StringWriter();
                     PrintWriter pw = new PrintWriter(sw);
                     e.printStackTrace(pw);
@@ -384,20 +384,22 @@ public class ControlConnection {
                 decompressedSize = sci.data.remaining();
                 maxDataLength = compressor.maxCompressedLength(decompressedSize);
             }
-            result = ByteBuffer.allocateDirect(32 + maxDataLength);
-            result.putInt(sci.width);
-            result.putInt(sci.height);
-            result.putInt(sci.pixelStride);
-            result.putInt(sci.rowStride);
-            result.putInt(sci.colorSpace.ordinal());
-            result.putLong(sci.timestamp);
-            result.putInt(decompressedSize);
+            result = ByteBuffer.allocateDirect(40 + maxDataLength);
+            result.putInt(sci.width); // 0
+            result.putInt(sci.height); // 4
+            result.putInt(sci.pixelStride); // 8
+            result.putInt(sci.rowStride); // 12
+            result.putInt(sci.colorSpace.ordinal()); // 16
+            result.putLong(sci.timestamp); // 20
+            result.putLong(0); // 28, placeholder for capture_latency
+            result.putInt(decompressedSize); // 36
             if (compressLevel == 0) {
                 result.put(sci.data);
             } else {
                 // compress image
                 compressor.compress(sci.data, result);
             }
+            result.putLong(28, System.nanoTime() - sci.timestamp);
         }
         return (ByteBuffer) result.flip();
     }
@@ -473,14 +475,15 @@ public class ControlConnection {
             throw new RuntimeException("command KEY: controller not initialized");
         }
         int payloadLength = payload.remaining();
-        if (payloadLength != 12) {
+        if (payloadLength != 16) {
             throw new RuntimeException("command KEY: invalid payload length");
         }
 
         int action = payload.getInt();
         int keyCode = payload.getInt();
         int metaState = payload.getInt();
-        boolean async = payload.getInt() != 0;
+        int flags = payload.getInt();
+        boolean async = (flags & EVENT_FLAG_ASYNC) != 0;
         int mode = async ? InputManagerHidden.INJECT_INPUT_EVENT_MODE_ASYNC : InputManagerHidden.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH;
 
         if (action != KeyEvent.ACTION_DOWN && action != KeyEvent.ACTION_UP) {

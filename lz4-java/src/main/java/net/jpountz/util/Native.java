@@ -16,7 +16,6 @@ package net.jpountz.util;
  * limitations under the License.
  */
 
-import android.os.Build;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,7 +40,7 @@ public enum Native {
     if (loaded) {
       return;
     }
-    String arch = Build.VERSION.SDK_INT >= 21 ? Build.SUPPORTED_ABIS[0] : Build.CPU_ABI;
+    String arch = System.getProperty("os.arch");
     String libname = String.format("lib/%s/liblz4-java.so", arch);
 
     ClassLoader loader = Objects.requireNonNull(Native.class.getClassLoader());
@@ -60,10 +59,12 @@ public enum Native {
       String filename = String.format("/data/local/tmp/liblz4-java-%s-%s.so", arch, UUID.randomUUID().toString().substring(0, 8));
       File tempLibFile = new File(filename);
       try {
-        tempLibFile.createNewFile();
+        if (!tempLibFile.createNewFile()) {
+          throw new IOException("Could not create temporary file: " + filename);
+        }
       } catch (IOException e1) {
         System.err.println("Failed to create temp lib file: " + e1.getMessage());
-        throw new RuntimeException(e1.getMessage());
+        throw new RuntimeException(e1);
       }
       try (FileOutputStream fos = new FileOutputStream(tempLibFile);
            InputStream is = loader.getResourceAsStream(libname)) {
