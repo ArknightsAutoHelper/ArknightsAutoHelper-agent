@@ -9,3 +9,10 @@ See demo: https://github.com/ArknightsAutoHelper/ArknightsAutoHelper/blob/master
 * MuMu
 * Nox
 * MEmu with Direct3D renderer (change to OpenGL renderer in settings)
+
+## Overhead
+
+For each rendered frame:
+
+* 1 extra render target of current override window size (as shown in `wm size`)
+* 1 extra synchronization
