@@ -3,6 +3,7 @@ See demo: https://github.com/ArknightsAutoHelper/ArknightsAutoHelper/blob/master
 ## Compatibility
 * Android 5+.
 * Correct SurfaceFlinger/hwcomposer/gralloc implementation (especially for emulators, aka. app players)
+* If the device works with [scrcpy](https://github.com/Genymobile/scrcpy), it should work with aah-agent too.
 
 ### Known Incompatible Emulators
 * BlueStacks with Performance grpahics engine (change to Compatibility in settings)
