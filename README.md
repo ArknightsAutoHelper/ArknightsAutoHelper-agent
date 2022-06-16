@@ -2,7 +2,7 @@ See demo: https://github.com/ArknightsAutoHelper/ArknightsAutoHelper/blob/master
 
 ## Compatibility
 * Android 5+.
-* Correct SurfaceFlinger/hwcomposer implementation (especially for emulators, aka. app players)
+* Correct SurfaceFlinger/hwcomposer/gralloc implementation (especially for emulators, aka. app players)
 
 ### Known Incompatible Emulators
 * BlueStacks with Performance grpahics engine (change to Compatibility in settings)
