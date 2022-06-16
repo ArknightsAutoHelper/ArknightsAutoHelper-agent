@@ -15,4 +15,5 @@ See demo: https://github.com/ArknightsAutoHelper/ArknightsAutoHelper/blob/master
 For each rendered frame:
 
 * 1 extra render target of current override window size (as shown in `wm size`)
+  * with front/back buffers
 * 1 extra synchronization
